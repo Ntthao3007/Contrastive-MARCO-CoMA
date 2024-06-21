@@ -111,9 +111,6 @@ if __name__ == "__main__":
 # qps = 10
 # rate = 1/qps
 
-# # PUT YOUR API KEY HERE
-# api_key = "AIzaSyDZjPGu1DAEOUKjC3YT0zX8PlHtlT1UlkE"
-
 # def getAttribProb(attrib_name, response_dict):
 #     return response_dict['attributeScores'][attrib_name]['summaryScore']['value']
 
