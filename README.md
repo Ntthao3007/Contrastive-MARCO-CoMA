@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # MaRCo Detoxification
 This is the repository for the 2023 ACL Paper ["Detoxifying Text with MaRCo: Controllable Revision with Experts and Anti-Experts"](https://arxiv.org/abs/2212.10543)
 
