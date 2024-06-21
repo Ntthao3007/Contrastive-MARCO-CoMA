@@ -1,5 +1,5 @@
-# MaRCo Detoxification
-This is the repository for the 2023 ACL Paper ["Detoxifying Text with MaRCo: Controllable Revision with Experts and Anti-Experts"](https://arxiv.org/abs/2212.10543)
+# Contrastive-MARCO-CoMA
+This repository is modified version for the Marco repository for the 2023 ACL Paper ["Detoxifying Text with MaRCo: Controllable Revision with Experts and Anti-Experts"](https://arxiv.org/abs/2212.10543)
 
 <p align="center">
   <img src="https://pbs.twimg.com/media/FkeZuLBUUAA6abX?format=jpg&name=4096x4096" alt="drawing" width="75%"/>
@@ -74,7 +74,3 @@ If you use/reference this work, please cite us with:
 ## Contact
 
 If you have any issues with the repository, questions about the paper, or anything else, please email hallisky@uw.edu.
-
-=======
-# Contrastive-MARCO-CoMA
->>>>>>> origin/main
