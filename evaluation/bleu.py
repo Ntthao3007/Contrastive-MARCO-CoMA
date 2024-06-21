@@ -21,5 +21,6 @@ if __name__ == "__main__":
     references = [["I am going to the store today to buy milk"], ["The dog bit his shoe, and he screamed"]]
     hypotheses = ["Going to store is something I will do today", "The angry wolf tore at his shoe. He screamed!"]
     bleu_score = get_bleu(references, hypotheses)
+    print(bleu_score)
 
 

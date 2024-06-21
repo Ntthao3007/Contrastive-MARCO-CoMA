@@ -2,17 +2,19 @@ import argparse
 from pathlib import Path
 from typing import Union, List
 import os
+import sys
+sys.path.append('/home/ubuntu/20thao.nt/TST/MarcoDetoxification/training')
 from numpy import ufunc
 from transformers import BartForConditionalGeneration, BartTokenizer
 from IPython import embed
-from training.infilling import *
+from infilling import *
 from utils import *
 import nltk.tokenize.casual
 import torch
 import torch.nn.functional as F
 import sys
-from . import gen_utils
-from . import generation_logits_process
+from gen_utils import *
+from generation_logits_process import *
 import pandas as pd
 import functools
 import operator
@@ -302,12 +304,28 @@ if __name__ == '__main__':
         )
     args = parser.parse_args()
 
-    inputs =  ["I'm surprised you got it done, seeing as you're all girls!", "You are a human"]
-    inputs_masked = ["I'm surprised you got it done, seeing as you're all<mask>!", 'You are a<mask>']
-
+    # inputs =  ["I'm surprised you got it done, seeing as you're all girls!", "You are a human"]
+    # inputs_masked = ["I'm surprised you got it done, seeing as you're all<mask>!", 'You are a<mask>']
+    inputs = ['Having any body image issues? You better not say yes.']
+    inputs_masked = ['Having any<mask><mask> issues? You better<mask> say yes.']
     outputs, decoded_outputs = rewriter.generate(inputs, inputs_masked, alpha_a = args.alpha_a, \
                                                   alpha_e = args.alpha_e, temperature = args.temperature, \
                                                     verbose = args.verbose, alpha_b = args.alpha_b)
     
     print("inputs:", inputs, "\nmasked inputs:", inputs_masked, "\noutputs:", decoded_outputs)
+
+    import gradio as gr
+
+    def infill_text(input_text):
+        inputs = [input_text]
+        inputs_masked = [input_text.replace("some_word", "<mask>")]
+        outputs, decoded_outputs = rewriter.generate(inputs, inputs_masked, alpha_a=args.alpha_a, alpha_e=args.alpha_e, temperature=args.temperature, verbose=args.verbose, alpha_b=args.alpha_b)
+        return decoded_outputs[0]
+
+    interface = gr.Interface(fn=infill_text, inputs="text", outputs="text")
+
+    # Launch the Gradio interface with share=True for a public link
+    interface.launch(share=True)
+
     embed()
+

@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
-from transformers import BartForConditionalGeneration, BartTokenizer, Trainer, TrainingArguments, AdamW, EarlyStoppingCallback
+from transformers import BartForConditionalGeneration, BartTokenizer, Trainer, TrainingArguments, AdamW, EarlyStoppingCallback, AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
 import numpy as np
 from torch.nn.utils.rnn import pad_sequence
@@ -13,7 +13,7 @@ import argparse
 import random
 from IPython import embed
 from utils import *
-from training.infilling import text_infill
+from infilling import text_infill
 
 def main(args):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -27,31 +27,62 @@ def main(args):
     # Load in the tokenizer
     tokenizer = BartTokenizer.from_pretrained(args.tok_type)
     mask = tokenizer.mask_token
-    
+
     if not os.path.exists(args.model_dir):
-        print(args.model_dir)
-        os.mkdir(args.model_dir)
+        print(f"Model directory {args.model_dir} does not exist. Loading model directly.")
+        tokenizer = AutoTokenizer.from_pretrained("hallisky/bart-base-nontoxic-expert")
+        model = AutoModelForSeq2SeqLM.from_pretrained("hallisky/bart-base-nontoxic-expert").to(device)
 
-    output_dir = args.model_dir + "/" + args.model_type.split("/")[-1] + "_" + str(args.lr) + "_" + \
-    str(args.seed) + "_" + str(args.train_batch_size * torch.cuda.device_count()) + "_" + args.data_type
-    print(output_dir)
-
-    # Logic to continue training - look at previous models saved
-    try:
-        prev_models = os.listdir(output_dir)
-        # Alpha sort
-        prev_models.sort()
-        # Len sort
-        prev_models.sort(key=len)
-    except:
-        prev_models = []
-    
-    # Logic to continue training if we want to load the old model - load pretrained model
-    if args.load_old and len(prev_models) > 0:
-        model = BartForConditionalGeneration.from_pretrained(os.path.join(output_dir, prev_models[-1]), forced_bos_token_id = tokenizer.bos_token_id).to(device)
+        output_dir = os.path.join(args.model_dir, f"{args.model_type.split('/')[-1]}_{args.lr}_{args.seed}_{args.train_batch_size * torch.cuda.device_count()}_{args.data_type}")
+        print(output_dir)
     else:
-        # Otherwise train a new model
-        model = BartForConditionalGeneration.from_pretrained(args.model_type, forced_bos_token_id = tokenizer.bos_token_id).to(device)
+        if not os.path.isdir(args.model_dir):
+            os.mkdir(args.model_dir)
+        tokenizer = AutoTokenizer.from_pretrained("hallisky/bart-base-nontoxic-expert")
+        model = AutoModelForSeq2SeqLM.from_pretrained("hallisky/bart-base-nontoxic-expert")
+
+        output_dir = os.path.join(args.model_dir, f"{args.model_type.split('/')[-1]}_{args.lr}_{args.seed}_{args.train_batch_size * torch.cuda.device_count()}_{args.data_type}")
+        print(output_dir)
+
+        # Logic to continue training - look at previous models saved
+        try:
+            prev_models = os.listdir(output_dir)
+            prev_models.sort()
+            prev_models.sort(key=len)
+        except FileNotFoundError:
+            prev_models = []
+        
+        # Logic to continue training if we want to load the old model - load pretrained model
+        if args.load_old and len(prev_models) > 0:
+            model = BartForConditionalGeneration.from_pretrained(os.path.join(output_dir, prev_models[-1]), forced_bos_token_id=tokenizer.bos_token_id).to(device)
+        else:
+            # Otherwise train a new model
+            model = BartForConditionalGeneration.from_pretrained(args.model_type, forced_bos_token_id=tokenizer.bos_token_id).to(device)
+    
+    # if not os.path.exists(args.model_dir):
+    #     print(args.model_dir)
+    #     os.mkdir(args.model_dir)
+
+    # output_dir = args.model_dir + "/" + args.model_type.split("/")[-1] + "_" + str(args.lr) + "_" + \
+    # str(args.seed) + "_" + str(args.train_batch_size * torch.cuda.device_count()) + "_" + args.data_type
+    # print(output_dir)
+
+    # # Logic to continue training - look at previous models saved
+    # try:
+    #     prev_models = os.listdir(output_dir)
+    #     # Alpha sort
+    #     prev_models.sort()
+    #     # Len sort
+    #     prev_models.sort(key=len)
+    # except:
+    #     prev_models = []
+    
+    # # Logic to continue training if we want to load the old model - load pretrained model
+    # if args.load_old and len(prev_models) > 0:
+    #     model = BartForConditionalGeneration.from_pretrained(os.path.join(output_dir, prev_models[-1]), forced_bos_token_id = tokenizer.bos_token_id).to(device)
+    # else:
+    #     # Otherwise train a new model
+    #     model = BartForConditionalGeneration.from_pretrained(args.model_type, forced_bos_token_id = tokenizer.bos_token_id).to(device)
 
     train_texts = []
     val_texts = []
@@ -191,9 +222,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--tok_type", default = "facebook/bart-base", help = "Tokenizer of model to fine-tune")
     parser.add_argument("--model_type", default = "facebook/bart-base", help = "Model to fine-tune")
-    parser.add_argument("--train_data", default = "/gscratch/xlab/hallisky/rewriting/src/data/datasets/jigsaw_full_30/train_toxic.csv", help = "Path to train set; ether the toxic or nontoxic split of jigsaw")
-    parser.add_argument("--val_data", default = "/gscratch/xlab/hallisky/rewriting/src/data/datasets/jigsaw_full_30/val_toxic.csv", help = "Path to dev set; same split as above")
-    parser.add_argument("--model_dir", default = "/gscratch/xlab/hallisky/rewriting/models/toxic")
+    parser.add_argument("--train_data", default = "/home/ubuntu/20thao.nt/TST/MarcoDetoxification/datasets/jigsaw_full_30/train_toxic.csv", help = "Path to train set; ether the toxic or nontoxic split of jigsaw")
+    parser.add_argument("--val_data", default = "/home/ubuntu/20thao.nt/TST/MarcoDetoxification/datasets/jigsaw_full_30/val_toxic.csv", help = "Path to dev set; same split as above")
+    parser.add_argument("--model_dir", default = "/home/ubuntu/20thao.nt/TST/MarcoDetoxification/rewriting/models_v2/toxic")
     parser.add_argument("--max_source_length", type = int, default = 182, help = "max source length (based on 99th percentile)")
     parser.add_argument("--max_target_length", type = int, default = 232, help = "max target length (based on 99th percentile)")
     parser.add_argument("--train_batch_size", type = int, default = 8)
@@ -206,7 +237,7 @@ if __name__ == '__main__':
     parser.add_argument("--save_total_limit", type = int, default = 2)
     parser.add_argument("--save_steps", type = int, default = 500)
     parser.add_argument("--data_type",default = "jigsaw_full_30")
-    parser.add_argument("--logging_dir", default = '/media/drive2/skyler/rewriting_data/toxic/models/logs')
+    parser.add_argument("--logging_dir", default = '/home/ubuntu/20thao.nt/TST/MarcoDetoxification/rewriting_data/toxic/models_v2/logs')
     parser.add_argument("--early_stopping_steps", type = int, default = 5)
     parser.add_argument("--load_old", action="store_true", help="use if you want to continue training the previous model")
     main(parser.parse_args())

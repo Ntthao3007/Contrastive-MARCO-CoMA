@@ -2,21 +2,24 @@ import argparse
 from pathlib import Path
 from typing import Union, List
 import os
-os.environ['TRANSFORMERS_CACHE'] = 'cache/'
+# os.environ['TRANSFORMERS_CACHE'] = 'cache/'
+import sys
+sys.path.append('/home/ubuntu/20thao.nt/TST/MarcoDetoxification/training')
 from transformers import BartForConditionalGeneration, BartTokenizer
 from IPython import embed
+
 from infilling import *
 from utils import *
 import nltk.tokenize.casual
 import torch
 import torch.nn.functional as F
 import sys
-from . import gen_utils
-from . import generation_logits_process
+from gen_utils import *
+from generation_logits_process import *
 import pandas as pd
 from tqdm import tqdm
-from .masking import Masker, method1, method1_list, preprocess
-from .generation import Infiller
+from masking import Masker, preprocess
+from generation import Infiller
 import re
 import time
 import itertools
@@ -43,7 +46,8 @@ def get_data(args):
             if "all" in args.data_type:
                 inputs = df[(df.split == df_split) & (df.label == df_lab)].text.tolist()
             else:
-                df_round = int(args.data_type[-1])
+                # df_round = int(args.data_type[-1])
+                df_round = 1
                 inputs = df[(df.split == df_split) & (df.label == df_lab)][df["round.base"] == df_round].text.tolist()
 
         elif "sbf" in args.data_path:
@@ -137,7 +141,7 @@ def rewrite(args):
             # Call the generate method
             outputs, decoded_outputs = rewriter.generate(inputs, decoded_mask_inputs, alpha_a = args.alpha_a, alpha_e = args.alpha_e, alpha_b = args.alpha_b, \
                 temperature = args.temperature, verbose = args.verbose, max_length = args.max_length, repetition_penalty= args.rep_penalty, \
-                top_p = args.top_p, filter_p = args.filter_p, top_k = args.top_k_gen, batch_size = args.batch_size, sample = args.sample)
+                p = args.top_p, filter_p = args.filter_p, k = args.top_k_gen, batch_size = args.batch_size, sample = args.sample)
 
             # Save the original inputs and the generations
             with open(os.path.join(final_path, "orig.txt"), "w") as f:
@@ -196,7 +200,7 @@ def rewrite(args):
 
                 outputs, decoded_outputs = rewriter.generate(inputs, decoded_mask_inputs, alpha_a = args.alpha_a, alpha_e = args.alpha_e, alpha_b = args.alpha_b, \
                     temperature = args.temperature, verbose = args.verbose, max_length = args.max_length, repetition_penalty = args.rep_penalty, \
-                    top_p = args.top_p, filter_p = args.filter_p, top_k = args.top_k_gen, batch_size = args.batch_size, sample = args.sample)
+                    p = args.top_p, filter_p = args.filter_p, k = args.top_k_gen, batch_size = args.batch_size, sample = args.sample)
 
                 with open(os.path.join(final_path, "orig.txt"), "w") as f:
                     for l in inputs:
@@ -219,11 +223,13 @@ if __name__ == "__main__":
     # General args
     parser.add_argument("--seed", type = int, default = 0, help = "Random seed to use")
     parser.add_argument("--data_type", default ="manual")
-    parser.add_argument("--data_path", default =None, help = "Path to the data")
-    parser.add_argument("--output_dir", default = "data/dexp_outputs/", help = "Directory to save the outputs to")
+    # parser.add_argument("--data_path", default ="/home/ubuntu/20thao.nt/TST/MarcoDetoxification/datasets/microagressions/test.csv", help = "Path to the data")
+    parser.add_argument("--data_path", default ="/home/ubuntu/20thao.nt/TST/MarcoDetoxification/datasets/microagressions/test.csv", help = "Path to the data")
+    parser.add_argument("--output_dir", default = "data/marco_contra", help = "Directory to save the outputs to")
     parser.add_argument("--base_path", default = "facebook/bart-base", help = "Base model to use")
     parser.add_argument("--antiexpert_path", default = "hallisky/bart-base-toxic-antiexpert", help = "Antiexpert model to use")
     parser.add_argument("--expert_path", default = "hallisky/bart-base-nontoxic-expert", help = "Expert model to use")
+    # parser.add_argument("--expert_path", default = "/home/ubuntu/20thao.nt/TST/MarcoDetoxification/rewriting/models/toxic/bart-base_2.5e-05_0_8_jigsaw_full_30/checkpoint-29500", help = "Expert model to use")
     parser.add_argument("--tokenizer", default = "facebook/bart-base", help = "Tokenizer to use")
     parser.add_argument("--base_type", default = "base", choices=["base", "expert", "antiexpert"], help = "Which model to for the base model")
     parser.add_argument("--expert_type", default = "expert", choices=["base", "expert", "antiexpert"], help = "Which model to use as the expert")
@@ -234,8 +240,8 @@ if __name__ == "__main__":
     parser.add_argument("--overwrite_mask",action="store_true", help = "If you want to regenerate the mask file for a set of inputs. Only useful if making multiple generations on the same input with different hyperparameters")
 
     # Args for Infilling portion (generation)
-    parser.add_argument("--alpha_a", type = float, default = 0.0, help = "weight on antiexpert for ensenmbling distributions during decoding")
-    parser.add_argument("--alpha_e", type = float, default = 0.0, help = "weight on expert for ensenmbling distributions during decoding")
+    parser.add_argument("--alpha_a", type = float, default = 2.0, help = "weight on antiexpert for ensenmbling distributions during decoding")
+    parser.add_argument("--alpha_e", type = float, default = 4.0, help = "weight on expert for ensenmbling distributions during decoding")
     parser.add_argument("--alpha_b", type = float, default = 1.0, help = "weight on base model for ensenmbling distributions during decoding")
     parser.add_argument("--max_length", type = int, default = 128, help = "maximum length to generate too")
     parser.add_argument("--verbose", action="store_true", help = "whether or not to print generations during generation time")

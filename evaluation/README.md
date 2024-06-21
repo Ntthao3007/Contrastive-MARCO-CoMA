@@ -13,7 +13,7 @@ The implementations for these metrics are in `bleu.py` and `bertscore.py` respec
 ## Run all Metrics
 Run the file `evaluate_all.py` with the following command, to get toxicity, BLEU, BERTScore, and perplexity for original texts and their rewrites with the following command, making sure you are in the main `MarcoDetoxification` directory:
 
-    python3 -m evaluation.evaluate_all --orig_path your_original_text_path --gen_path your_rewrites_path
+    python3 -m /home/ubuntu/20thao.nt/TST/MarcoDetoxification/evaluation/evaluate_all.py --orig_path your_original_text_path --gen_path your_rewrites_path
 
 `your_original_text_path` should be a `.txt` file where each line contains the original prompt. `your_rewrites_path` should be the same type of file, where each line in `your_rewrites_path` corresponds to the rewrite of the original text from `your_original_text_path`.
 

@@ -1,7 +1,9 @@
-from .bertscore import *
-from .bleu import *
-from .perplexity import *
-from .toxicity import *
+import sys
+sys.path.append('/home/ubuntu/20thao.nt/TST/MarcoDetoxification/evaluation')
+from bertscore import *
+from bleu import *
+from perplexity import *
+from toxicity import *
 import numpy as np
 import argparse
 import os
@@ -22,29 +24,42 @@ def save_toxicity(tox_hyp, percent_tox_hyp, path, file_name = "toxicity.txt"):
 def evaluate_all(references, hypotheses, eval_ref=True):
     tox_ref, perp_ref, percent_tox_ref = None, None, None
     
-    # print("Calculating toxicity...")
-    # tox_hyp = get_toxicity(hypotheses)
-    # percent_tox_hyp = sum(np.array(tox_hyp) >= 0.5) / len(tox_hyp)
-    # tox_hyp = np.nanmean(tox_hyp)
-
+    print("Calculating toxicity...")
+    tox_hyp = get_toxicity(hypotheses)
+    percent_tox_hyp = sum(np.array(tox_hyp) >= 0.5) / len(tox_hyp)
+    tox_hyp = np.nanmean(tox_hyp)
+    
+    ###############
     print("Calculating perplexity...")
     perp_hyp =  np.nanmean(get_perplexity(hypotheses))
+    print(f"Perplexity: {perp_hyp}")
 
-    embed()
+    # #embed()
     print("Calculating bert score...")
     bs = np.nanmean(get_bert_scores(zip(references,hypotheses))["f1"])
+    print(f"BERT Score: {bs}")
     print("Calculating bleu4...")
     bleu = calc_bleu(references, hypotheses)
+    print(f"BLEU Score: {bleu}")
 
     if eval_ref:
-        print("Calculating toxicity...")
-        tox_ref = get_toxicity(references)
+        print("Calculating orig toxicity...")
+        tox_ref = get_toxicity(references[:30])
         percent_tox_ref = sum(np.array(tox_ref) >= 0.5) / len(tox_ref)
         tox_ref =  np.nanmean(tox_ref)
+        print(f"Toxicity score: {tox_ref, percent_tox_ref}")
+        
+        print("Calculating gen toxicity...")
+        tox_ref = get_toxicity(hypotheses[:30])
+        percent_tox_ref = sum(np.array(tox_ref) >= 0.5) / len(tox_ref)
+        tox_ref =  np.nanmean(tox_ref)
+        print(f"Toxicity score: {tox_ref, percent_tox_ref}")
+        
         print("Calculating perplexity...")
         perp_ref =  np.nanmean(get_perplexity(references))
+        print(f"Perplexity: {perp_ref}")
 
-    return bs, bleu, tox_hyp, perp_hyp, tox_ref, perp_ref, percent_tox_hyp, percent_tox_ref
+    return bs, bleu, perp_hyp, tox_ref, perp_ref, percent_tox_ref
 
 def get_data(args):
     print(args)
@@ -61,15 +76,15 @@ def eval_args(args):
     orig, gen = get_data(args)
 
     metrics = evaluate_all(orig, gen)
-    name = args.gen_path.split('/')[-1]
-    save_path = args.gen_path[:-4] + "_stats.txt"
+    # name = args.gen_path.split('/')[-1]
+    # save_path = args.gen_path[:-4] + "_stats.txt"
 
-    items = ["bertscore", "bleu4", "toxicity gen", "perplexity gen", "toxicity orig", "perplexity orig", "percent toxic gen", "percent toxic ref"]
+    # items = ["bertscore", "bleu4", "perplexity gen", "toxicity orig", "perplexity orig", "percent toxic ref"]
     
-    with open(save_path, "w") as f:
-        for i, m in zip(items, metrics):
-            print(i, ":", m)
-            f.write(i + ": " + str(m) + "\n")
+    # with open(save_path, "w") as f:
+    #     for i, m in zip(items, metrics):
+    #         print(i, ":", m)
+    #         f.write(i + ": " + str(m) + "\n")
 
 
 if __name__ == "__main__":
@@ -80,14 +95,6 @@ if __name__ == "__main__":
     
     """
     Some example commands
-
     python3 -m evaluation.evaluate_all --orig_path /home/skylerh/rewriting/src/data/test_10k_toxic.txt --gen_path /home/skylerh/rewriting/src/data/model_outputs/paragedi_with_mined_paraphraser.txt
-
-    python3 -m evaluation.evaluate_all --orig_path /home/skylerh/rewriting/src/data/dexp_outputs/m-expert_data-jigsaw_mask_bathresh-0.5_eathresh-2.0_topk-0_alpha-0.0_orig.txt \
-    --gen_path /home/skylerh/rewriting/src/data/dexp_outputs/m-expert_data-jigsaw_mask_bathresh-0.5_eathresh-2.0_topk-0_alpha-0.0_gen.txt
-
-    python3 -m evaluation.evaluate_all --orig_path /home/skylerh/rewriting/src/data/test_10k_toxic.txt --gen_path /home/skylerh/rewriting/src/data/dexp_outputs/m-expert_data-jigsaw_mask_bathresh-0.5_eathresh-1.5_topk-0_alpha-0.0_orig.txt
-
-    python3 -m evaluation.evaluate_all --gen_path /gscratch/xlab/hallisky/rewriting/src/data/dexp_outputs/base_expert_jigsaw_jigsaw_mask_bathresh0.5_eathresh1.5_topk0_alpha0.0_beams1/gen.txt --orig_path /gscratch/xlab/hallisky/rewriting/src/data/dexp_outputs/base_expert_jigsaw_jigsaw_mask_bathresh0.5_eathresh1.5_topk0_alpha0.0_beams1/orig.txt
-        
+    python3 -m evaluation.evaluate_all --gen_path /gscratch/xlab/hallisky/rewriting/src/data/dexp_outputs/base_expert_jigsaw_jigsaw_mask_bathresh0.5_eathresh1.5_topk0_alpha0.0_beams1/gen.txt --orig_path /gscratch/xlab/hallisky/rewriting/src/data/dexp_outputs/base_expert_jigsaw_jigsaw_mask_bathresh0.5_eathresh1.5_topk0_alpha0.0_beams1/orig.txt  
     """

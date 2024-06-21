@@ -2,16 +2,18 @@ import argparse
 from pathlib import Path
 from typing import Union, List
 import os
+import sys
+sys.path.append('/home/ubuntu/20thao.nt/TST/MarcoDetoxification/training')
 from transformers import BartForConditionalGeneration, BartTokenizer
 from IPython import embed
-from training.infilling import *
+from infilling import *
 from utils import preprocess, detokenize, seed_everything
 import nltk.tokenize.casual
 import torch
 import torch.nn.functional as F
 import sys
-from . import gen_utils
-from . import generation_logits_process
+from gen_utils import *
+from generation_logits_process import *
 import pandas as pd
 import functools
 import operator

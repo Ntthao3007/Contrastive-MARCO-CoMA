@@ -1,6 +1,6 @@
 # https://huggingface.co/transformers/perplexity.html
 import os
-os.environ['TRANSFORMERS_CACHE'] = "/gscratch/xlab/hallisky/KAug/cache"
+# os.environ['TRANSFORMERS_CACHE'] = "/gscratch/xlab/hallisky/KAug/cache"
 import transformers
 import torch
 from IPython import embed
@@ -11,7 +11,7 @@ from tqdm import tqdm
 def get_perplexity(sentences, model = None, tokenizer = None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if tokenizer is None or model is None:
-        model_id = 'gpt2-xl'
+        model_id = 'openai-community/gpt2'
         model = GPT2LMHeadModel.from_pretrained(model_id).to(device)
         tokenizer = GPT2TokenizerFast.from_pretrained(model_id)
     model.eval()

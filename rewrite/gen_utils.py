@@ -1,9 +1,11 @@
 import torch
 from torch import Tensor
 from torch.nn import functional as F
+import sys
+sys.path.append('/home/ubuntu/20thao.nt/TST/MarcoDetoxification/training')
 from utils import *
 import nltk.tokenize.casual
-from training.infilling import *
+from infilling import *
 
 def top_k_top_p_filtering(
     logits: Tensor,
